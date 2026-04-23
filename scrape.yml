@@ -1,0 +1,150 @@
+name: Scrape Cook County Motivated Seller Leads
+
+on:
+  schedule:
+    # Run daily at 7:00 AM UTC (2 AM CT / 3 AM ET)
+    - cron: "0 7 * * *"
+  workflow_dispatch:
+    inputs:
+      lookback_days:
+        description: "Number of days to look back"
+        required: false
+        default: "30"
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "scrape"
+  cancel-in-progress: false
+
+jobs:
+  scrape:
+    name: Scrape & Process Records
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+
+    env:
+      LOOKBACK_DAYS: ${{ github.event.inputs.lookback_days || '30' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: scraper/requirements.txt
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4 lxml dbfread playwright
+
+      - name: Install Playwright browsers
+        run: |
+          python -m playwright install --with-deps chromium
+
+      - name: Create output directories
+        run: |
+          mkdir -p dashboard data
+
+      - name: Initialize records.json if missing
+        run: |
+          if [ ! -f dashboard/records.json ]; then
+            echo '{"fetched_at":null,"source":"Cook County Recorder of Deeds","date_range":{},"total":0,"with_address":0,"records":[]}' > dashboard/records.json
+          fi
+          if [ ! -f data/records.json ]; then
+            echo '{"fetched_at":null,"source":"Cook County Recorder of Deeds","date_range":{},"total":0,"with_address":0,"records":[]}' > data/records.json
+          fi
+
+      - name: Run scraper
+        run: python scraper/fetch.py
+        timeout-minutes: 45
+
+      - name: Validate output
+        run: |
+          python -c "
+          import json, sys
+          with open('dashboard/records.json') as f:
+              d = json.load(f)
+          total = d.get('total', 0)
+          print(f'Records scraped: {total}')
+          print(f'With address: {d.get(\"with_address\", 0)}')
+          if total == 0:
+              print('WARNING: No records found — portal may be unavailable')
+          sys.exit(0)
+          "
+
+      - name: Generate run summary
+        run: |
+          python -c "
+          import json
+          from datetime import datetime
+
+          with open('dashboard/records.json') as f:
+              d = json.load(f)
+
+          total = d.get('total', 0)
+          with_addr = d.get('with_address', 0)
+          records = d.get('records', [])
+          by_type = {}
+          for r in records:
+              t = r.get('cat_label', r.get('doc_type', 'Unknown'))
+              by_type[t] = by_type.get(t, 0) + 1
+
+          summary = f'''## Cook County Lead Scraper — Run Summary
+          **Run time:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}
+          **Total records:** {total}
+          **With address:** {with_addr}
+
+          ### By Document Type
+          ''' + '\n'.join(f'- {k}: {v}' for k, v in sorted(by_type.items(), key=lambda x: -x[1]))
+
+          print(summary)
+          with open('GITHUB_STEP_SUMMARY.md', 'w') as f:
+              f.write(summary)
+          "
+          cat GITHUB_STEP_SUMMARY.md >> \$GITHUB_STEP_SUMMARY
+
+      - name: Commit and push records
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add dashboard/records.json data/records.json dashboard/ghl_export.csv || true
+          git diff --staged --quiet || git commit -m "chore: update records $(date -u '+%Y-%m-%d %H:%M UTC') [skip ci]"
+          git push
+
+  deploy:
+    name: Deploy Dashboard to GitHub Pages
+    needs: scrape
+    runs-on: ubuntu-22.04
+    if: github.ref == 'refs/heads/main'
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main  # always use latest after scrape commit
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dashboard
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

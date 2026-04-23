@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Cook County Motivated Seller Leads</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Syne:wght@400;600;700;800&display=swap"/>
+<style>
+  /* ── Design tokens ───────────────────────────────── */
+  :root {
+    --bg:        #0a0c0f;
+    --surface:   #111318;
+    --border:    #1e2229;
+    --border-hi: #2d3340;
+    --accent:    #f0b429;
+    --accent2:   #e05c2c;
+    --accent3:   #3dd68c;
+    --text:      #e8eaf0;
+    --muted:     #5a6070;
+    --danger:    #f04040;
+    --info:      #3a9de0;
+
+    --score-hi:   #3dd68c;
+    --score-med:  #f0b429;
+    --score-lo:   #e05c2c;
+
+    --font-ui:   'Syne', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+    --radius:    6px;
+    --transition: 0.18s ease;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-ui);
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  /* ── Scrollbar ───────────────────────────────────── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 3px; }
+
+  /* ── Layout ──────────────────────────────────────── */
+  .header {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(10,12,15,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 56px;
+  }
+
+  .logo {
+    font-weight: 800; font-size: 15px; letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .logo-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; box-shadow: 0 0 0 0 rgba(240,180,41,0.4); }
+    50% { opacity: 0.8; box-shadow: 0 0 0 6px rgba(240,180,41,0); }
+  }
+
+  .header-meta {
+    font-family: var(--font-mono); font-size: 11px; color: var(--muted);
+    display: flex; align-items: center; gap: 16px;
+  }
+  .header-meta span { display: flex; align-items: center; gap: 4px; }
+
+  .main { max-width: 1600px; margin: 0 auto; padding: 24px; }
+
+  /* ── Stats bar ───────────────────────────────────── */
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color var(--transition);
+  }
+  .stat-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: var(--accent);
+  }
+  .stat-card.green::before { background: var(--accent3); }
+  .stat-card.red::before   { background: var(--accent2); }
+  .stat-card.blue::before  { background: var(--info); }
+
+  .stat-label {
+    font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 4px;
+    font-family: var(--font-mono);
+  }
+  .stat-value {
+    font-size: 28px; font-weight: 800; color: var(--text); line-height: 1;
+  }
+  .stat-sub { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+  /* ── Controls ────────────────────────────────────── */
+  .controls {
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .search-wrap {
+    flex: 1; min-width: 220px; max-width: 360px; position: relative;
+  }
+  .search-wrap input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: var(--font-mono); font-size: 12px;
+    padding: 8px 12px 8px 34px;
+    outline: none;
+    transition: border-color var(--transition);
+  }
+  .search-wrap input:focus { border-color: var(--accent); }
+  .search-wrap .icon {
+    position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+    color: var(--muted); pointer-events: none; font-size: 13px;
+  }
+
+  select, .btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: var(--font-ui); font-size: 12px;
+    padding: 8px 12px;
+    cursor: pointer;
+    outline: none;
+    transition: border-color var(--transition), background var(--transition);
+  }
+  select:focus, .btn:hover { border-color: var(--accent); }
+
+  .btn-primary {
+    background: var(--accent); color: #000;
+    font-weight: 700; border-color: var(--accent);
+    padding: 8px 16px;
+  }
+  .btn-primary:hover { background: #f5c842; border-color: #f5c842; }
+
+  .btn-ghost { background: transparent; }
+  .btn-ghost:hover { background: var(--border); }
+
+  /* Filter chips */
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .chip {
+    font-family: var(--font-mono); font-size: 10px;
+    padding: 3px 10px; border-radius: 20px;
+    border: 1px solid var(--border);
+    color: var(--muted); cursor: pointer;
+    transition: all var(--transition);
+    user-select: none;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
+  .chip.active {
+    background: var(--accent); color: #000;
+    border-color: var(--accent); font-weight: 500;
+  }
+
+  /* ── Table ───────────────────────────────────────── */
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: auto;
+    max-height: calc(100vh - 340px);
+  }
+
+  table {
+    width: 100%; border-collapse: collapse;
+    font-family: var(--font-mono); font-size: 11.5px;
+  }
+
+  thead { position: sticky; top: 0; z-index: 10; }
+  th {
+    background: #0d0f13;
+    border-bottom: 1px solid var(--border);
+    padding: 10px 12px;
+    text-align: left;
+    font-family: var(--font-ui);
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--muted);
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+    transition: color var(--transition);
+  }
+  th:hover { color: var(--accent); }
+  th .sort-icon { margin-left: 4px; opacity: 0.4; font-style: normal; }
+  th.sort-asc .sort-icon, th.sort-desc .sort-icon { opacity: 1; color: var(--accent); }
+  th.sort-asc .sort-icon::after { content: '↑'; }
+  th.sort-desc .sort-icon::after { content: '↓'; }
+  th:not(.sort-asc):not(.sort-desc) .sort-icon::after { content: '↕'; }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background var(--transition);
+    cursor: pointer;
+  }
+  tbody tr:hover { background: rgba(240,180,41,0.04); }
+  tbody tr.selected { background: rgba(240,180,41,0.07); }
+  tbody tr:last-child { border-bottom: none; }
+
+  td { padding: 9px 12px; vertical-align: middle; }
+  td.mono { font-family: var(--font-mono); }
+
+  /* Score badge */
+  .score-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 36px; height: 22px; border-radius: 4px;
+    font-weight: 700; font-size: 11px; font-family: var(--font-ui);
+  }
+  .score-hi  { background: rgba(61,214,140,0.15); color: var(--score-hi); }
+  .score-med { background: rgba(240,180,41,0.15); color: var(--score-med); }
+  .score-lo  { background: rgba(224,92,44,0.15);  color: var(--score-lo);  }
+
+  /* Doc type badge */
+  .type-badge {
+    display: inline-block;
+    padding: 2px 7px; border-radius: 3px;
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 0.05em; text-transform: uppercase;
+    font-family: var(--font-ui);
+  }
+  .type-foreclosure { background: rgba(224,92,44,0.15); color: #f08060; }
+  .type-judgment    { background: rgba(224,80,80,0.15); color: #f06060; }
+  .type-tax         { background: rgba(240,180,41,0.15); color: var(--accent); }
+  .type-lien        { background: rgba(58,157,224,0.15); color: var(--info); }
+  .type-probate     { background: rgba(170,100,220,0.12); color: #c080f0; }
+  .type-notice      { background: rgba(61,214,140,0.12); color: var(--accent3); }
+  .type-other       { background: rgba(90,96,112,0.15); color: var(--muted); }
+
+  /* Flags */
+  .flags-wrap { display: flex; flex-wrap: wrap; gap: 3px; }
+  .flag-pill {
+    font-size: 9px; padding: 1px 5px; border-radius: 3px;
+    background: rgba(240,180,41,0.1); color: var(--accent);
+    border: 1px solid rgba(240,180,41,0.2);
+    white-space: nowrap;
+  }
+
+  .amount { color: var(--accent); font-weight: 500; }
+  .no-amount { color: var(--muted); }
+
+  .owner-cell { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .addr-cell  { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .doc-num    { color: var(--muted); font-size: 10px; }
+
+  a.ext-link {
+    color: var(--info); text-decoration: none; font-size: 10px;
+    opacity: 0.7; transition: opacity var(--transition);
+  }
+  a.ext-link:hover { opacity: 1; text-decoration: underline; }
+
+  /* ── Detail drawer ───────────────────────────────── */
+  .drawer-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+  .drawer-overlay.open { opacity: 1; pointer-events: all; }
+
+  .drawer {
+    position: fixed; top: 0; right: 0; bottom: 0;
+    width: min(500px, 95vw);
+    background: #0e1014;
+    border-left: 1px solid var(--border);
+    z-index: 201;
+    transform: translateX(100%);
+    transition: transform 0.25s cubic-bezier(.4,0,.2,1);
+    overflow-y: auto; padding: 24px;
+    display: flex; flex-direction: column; gap: 20px;
+  }
+  .drawer.open { transform: translateX(0); }
+
+  .drawer-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 12px;
+  }
+  .drawer-title { font-size: 18px; font-weight: 800; line-height: 1.2; }
+  .drawer-close {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 4px; color: var(--muted);
+    font-size: 16px; cursor: pointer; padding: 4px 8px;
+    transition: all var(--transition); flex-shrink: 0;
+  }
+  .drawer-close:hover { border-color: var(--danger); color: var(--danger); }
+
+  .drawer-section { display: flex; flex-direction: column; gap: 8px; }
+  .drawer-section-title {
+    font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--muted); font-family: var(--font-mono);
+    padding-bottom: 6px; border-bottom: 1px solid var(--border);
+  }
+  .dl { display: grid; grid-template-columns: 140px 1fr; gap: 4px 8px; }
+  .dl dt { color: var(--muted); font-size: 11px; font-family: var(--font-mono); padding-top: 1px; }
+  .dl dd { color: var(--text); font-size: 12px; word-break: break-word; }
+
+  .score-ring {
+    display: flex; align-items: center; gap: 16px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px;
+  }
+  .ring-svg { flex-shrink: 0; }
+  .ring-text { font-size: 10px; color: var(--muted); line-height: 1.6; }
+  .ring-text strong { color: var(--text); font-size: 13px; display: block; }
+
+  /* ── Pagination / status ─────────────────────────── */
+  .table-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 16px;
+    font-size: 11px; color: var(--muted); font-family: var(--font-mono);
+    border-top: 1px solid var(--border);
+  }
+  .pagination { display: flex; gap: 4px; }
+  .page-btn {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 4px; color: var(--muted); padding: 4px 8px; cursor: pointer;
+    font-size: 11px; font-family: var(--font-mono);
+    transition: all var(--transition);
+  }
+  .page-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .page-btn.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 700; }
+  .page-btn:disabled { opacity: 0.3; cursor: default; }
+
+  /* ── Empty / loading ─────────────────────────────── */
+  .empty {
+    text-align: center; padding: 60px 20px;
+    color: var(--muted); font-size: 13px;
+  }
+  .empty .big { font-size: 40px; margin-bottom: 12px; }
+  .loading { display: flex; align-items: center; justify-content: center; padding: 60px; }
+  .spinner {
+    width: 32px; height: 32px; border: 2px solid var(--border);
+    border-top-color: var(--accent); border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Export button area ──────────────────────────── */
+  .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .count-badge {
+    font-family: var(--font-mono); font-size: 11px;
+    background: var(--border); border-radius: 20px;
+    padding: 2px 8px; color: var(--muted);
+  }
+
+  /* ── Toast ───────────────────────────────────────── */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: var(--accent); color: #000;
+    font-weight: 700; padding: 10px 20px; border-radius: 6px;
+    font-size: 13px; transition: transform 0.3s ease;
+    z-index: 999; pointer-events: none;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ── Responsive ──────────────────────────────────── */
+  @media (max-width: 800px) {
+    .main { padding: 12px; }
+    .header { padding: 0 12px; }
+    .stats-bar { grid-template-columns: repeat(2, 1fr); }
+    td:nth-child(n+7) { display: none; }  /* hide last cols on mobile */
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+  <div class="logo">
+    <div class="logo-dot"></div>
+    Cook County Lead Tracker
+  </div>
+  <div class="header-meta">
+    <span id="lastUpdate">Loading…</span>
+    <span id="dateRange"></span>
+  </div>
+</header>
+
+<!-- Main -->
+<main class="main">
+
+  <!-- Stats -->
+  <div class="stats-bar">
+    <div class="stat-card">
+      <div class="stat-label">Total Leads</div>
+      <div class="stat-value" id="statTotal">—</div>
+      <div class="stat-sub">this period</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-label">With Address</div>
+      <div class="stat-value" id="statAddr">—</div>
+      <div class="stat-sub">matched parcel</div>
+    </div>
+    <div class="stat-card red">
+      <div class="stat-label">High Score (75+)</div>
+      <div class="stat-value" id="statHigh">—</div>
+      <div class="stat-sub">top motivation</div>
+    </div>
+    <div class="stat-card blue">
+      <div class="stat-label">Foreclosures</div>
+      <div class="stat-value" id="statFC">—</div>
+      <div class="stat-sub">LP + NOFC</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Avg Score</div>
+      <div class="stat-value" id="statAvg">—</div>
+      <div class="stat-sub">out of 100</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">New This Week</div>
+      <div class="stat-value" id="statWeek">—</div>
+      <div class="stat-sub">last 7 days</div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <div class="search-wrap">
+      <span class="icon">⌕</span>
+      <input type="text" id="searchInput" placeholder="Search owner, address, doc #…"/>
+    </div>
+    <select id="sortSelect">
+      <option value="score-desc">Sort: Score ↓</option>
+      <option value="score-asc">Sort: Score ↑</option>
+      <option value="date-desc">Sort: Newest</option>
+      <option value="date-asc">Sort: Oldest</option>
+      <option value="amount-desc">Sort: Amount ↓</option>
+    </select>
+    <select id="catFilter">
+      <option value="">All Categories</option>
+      <option value="foreclosure">Foreclosure / LP</option>
+      <option value="judgment">Judgment</option>
+      <option value="tax">Tax Lien</option>
+      <option value="lien">Lien</option>
+      <option value="probate">Probate</option>
+      <option value="notice">Notice</option>
+    </select>
+    <div class="toolbar">
+      <span class="count-badge" id="visibleCount">0 leads</span>
+      <button class="btn btn-primary" onclick="exportCSV()">⬇ Export CSV</button>
+      <button class="btn btn-ghost" onclick="copyGHL()">Copy GHL</button>
+    </div>
+  </div>
+
+  <!-- Quick-filter chips -->
+  <div class="chips" id="chips">
+    <div class="chip active" data-filter="">All</div>
+    <div class="chip" data-filter="score75">Score 75+</div>
+    <div class="chip" data-filter="newweek">New This Week</div>
+    <div class="chip" data-filter="hasaddr">Has Address</div>
+    <div class="chip" data-filter="lp">Lis Pendens</div>
+    <div class="chip" data-filter="irs">IRS / Tax Lien</div>
+    <div class="chip" data-filter="judgment">Judgment</div>
+    <div class="chip" data-filter="probate">Probate</div>
+    <div class="chip" data-filter="highdebt">High Debt ($100K+)</div>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrap" id="tableWrap">
+    <div class="loading"><div class="spinner"></div></div>
+  </div>
+
+</main>
+
+<!-- Detail Drawer -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-header">
+    <div class="drawer-title" id="drawerTitle">Record Detail</div>
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+  </div>
+  <div id="drawerBody"></div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let ALL_RECORDS = [];
+let FILTERED = [];
+let SORT_KEY = 'score';
+let SORT_DIR = -1;
+let SEARCH = '';
+let CAT_FILTER = '';
+let CHIP_FILTER = '';
+let PAGE = 1;
+const PAGE_SIZE = 50;
+
+const DOC_COLORS = {
+  foreclosure: 'type-foreclosure',
+  judgment: 'type-judgment',
+  tax: 'type-tax',
+  lien: 'type-lien',
+  probate: 'type-probate',
+  notice: 'type-notice',
+  other: 'type-other',
+};
+
+// ── Init ───────────────────────────────────────────────────────────────────
+async function init() {
+  try {
+    const res = await fetch('records.json?' + Date.now());
+    const data = await res.json();
+
+    ALL_RECORDS = (data.records || []).map((r, i) => ({ ...r, _id: i }));
+
+    // Header meta
+    if (data.fetched_at) {
+      const d = new Date(data.fetched_at);
+      document.getElementById('lastUpdate').textContent =
+        'Updated: ' + d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+    if (data.date_range?.start) {
+      document.getElementById('dateRange').textContent =
+        data.date_range.start + ' – ' + data.date_range.end;
+    }
+
+    // Stats
+    document.getElementById('statTotal').textContent = ALL_RECORDS.length.toLocaleString();
+    document.getElementById('statAddr').textContent =
+      ALL_RECORDS.filter(r => r.prop_address).length.toLocaleString();
+    document.getElementById('statHigh').textContent =
+      ALL_RECORDS.filter(r => r.score >= 75).length.toLocaleString();
+    document.getElementById('statFC').textContent =
+      ALL_RECORDS.filter(r => ['LP','NOFC'].includes(r.doc_type)).length.toLocaleString();
+    const avg = ALL_RECORDS.length
+      ? Math.round(ALL_RECORDS.reduce((s,r) => s + (r.score||0), 0) / ALL_RECORDS.length)
+      : 0;
+    document.getElementById('statAvg').textContent = avg;
+
+    const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
+    document.getElementById('statWeek').textContent =
+      ALL_RECORDS.filter(r => r.filed && new Date(r.filed) >= weekAgo).length.toLocaleString();
+
+    applyFilters();
+  } catch(e) {
+    document.getElementById('tableWrap').innerHTML =
+      `<div class="empty"><div class="big">⚠</div>Could not load records.json<br><small style="color:var(--muted)">${e.message}</small></div>`;
+  }
+}
+
+// ── Filtering & Sorting ────────────────────────────────────────────────────
+function applyFilters() {
+  const q = SEARCH.toLowerCase();
+  const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
+
+  FILTERED = ALL_RECORDS.filter(r => {
+    if (CAT_FILTER && r.cat !== CAT_FILTER) return false;
+    if (q) {
+      const hay = [r.owner, r.doc_num, r.prop_address, r.prop_city, r.grantee, r.doc_type]
+        .join(' ').toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    switch(CHIP_FILTER) {
+      case 'score75': return r.score >= 75;
+      case 'newweek': return r.filed && new Date(r.filed) >= weekAgo;
+      case 'hasaddr': return !!r.prop_address;
+      case 'lp':      return ['LP','NOFC'].includes(r.doc_type);
+      case 'irs':     return ['LNIRS','LNFED','LNCORPTX','TAXDEED'].includes(r.doc_type);
+      case 'judgment':return r.cat === 'judgment';
+      case 'probate': return r.cat === 'probate';
+      case 'highdebt':return r.amount && r.amount > 100000;
+    }
+    return true;
+  });
+
+  // Sort
+  FILTERED.sort((a, b) => {
+    let va, vb;
+    if (SORT_KEY === 'score')  { va = a.score || 0; vb = b.score || 0; }
+    else if (SORT_KEY === 'date') { va = a.filed || ''; vb = b.filed || ''; }
+    else if (SORT_KEY === 'amount') { va = a.amount || 0; vb = b.amount || 0; }
+    else { va = a[SORT_KEY] || ''; vb = b[SORT_KEY] || ''; }
+    return SORT_DIR * (va < vb ? -1 : va > vb ? 1 : 0);
+  });
+
+  PAGE = 1;
+  document.getElementById('visibleCount').textContent = FILTERED.length.toLocaleString() + ' leads';
+  renderTable();
+}
+
+// ── Render ─────────────────────────────────────────────────────────────────
+function renderTable() {
+  const wrap = document.getElementById('tableWrap');
+  const start = (PAGE - 1) * PAGE_SIZE;
+  const slice = FILTERED.slice(start, start + PAGE_SIZE);
+  const totalPages = Math.ceil(FILTERED.length / PAGE_SIZE);
+
+  if (!FILTERED.length) {
+    wrap.innerHTML = `<div class="empty"><div class="big">🔍</div>No records match your filters.</div>`;
+    return;
+  }
+
+  const rows = slice.map(r => {
+    const sc = scoreClass(r.score);
+    const cat = r.cat || 'other';
+    const clr = DOC_COLORS[cat] || 'type-other';
+    const flags = (r.flags || []).slice(0,3).map(f =>
+      `<span class="flag-pill">${f}</span>`).join('');
+    const amt = r.amount
+      ? `<span class="amount">$${Number(r.amount).toLocaleString()}</span>`
+      : `<span class="no-amount">—</span>`;
+    const addr = r.prop_address
+      ? `${r.prop_address}<small style="color:var(--muted)">${r.prop_city ? ', '+r.prop_city : ''}</small>`
+      : '<span style="color:var(--muted)">—</span>';
+    const link = r.clerk_url
+      ? `<a class="ext-link" href="${esc(r.clerk_url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">↗ View</a>`
+      : '';
+
+    return `<tr onclick="openDrawer(${r._id})" data-id="${r._id}">
+      <td><span class="score-badge ${sc}">${r.score || 0}</span></td>
+      <td><span class="type-badge ${clr}">${esc(r.doc_type)}</span></td>
+      <td class="mono doc-num">${esc(r.doc_num)}</td>
+      <td class="mono">${esc(r.filed || '—')}</td>
+      <td class="owner-cell" title="${esc(r.owner)}">${esc(r.owner || '—')}</td>
+      <td class="addr-cell">${addr}</td>
+      <td>${amt}</td>
+      <td><div class="flags-wrap">${flags}</div></td>
+      <td>${link}</td>
+    </tr>`;
+  }).join('');
+
+  const pagesHtml = buildPagination(totalPages);
+
+  wrap.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th data-sort="score" class="${thClass('score')}">Score<i class="sort-icon"></i></th>
+          <th data-sort="doc_type" class="${thClass('doc_type')}">Type<i class="sort-icon"></i></th>
+          <th data-sort="doc_num" class="${thClass('doc_num')}">Doc #<i class="sort-icon"></i></th>
+          <th data-sort="date" class="${thClass('date')}">Filed<i class="sort-icon"></i></th>
+          <th data-sort="owner" class="${thClass('owner')}">Owner<i class="sort-icon"></i></th>
+          <th>Property Address</th>
+          <th data-sort="amount" class="${thClass('amount')}">Amount<i class="sort-icon"></i></th>
+          <th>Flags</th>
+          <th>Link</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="table-footer">
+      <span>Showing ${start+1}–${Math.min(start+PAGE_SIZE, FILTERED.length)} of ${FILTERED.length}</span>
+      <div class="pagination">${pagesHtml}</div>
+    </div>`;
+
+  // Attach sort listeners
+  wrap.querySelectorAll('th[data-sort]').forEach(th => {
+    th.addEventListener('click', () => {
+      const k = th.dataset.sort;
+      if (SORT_KEY === k) SORT_DIR *= -1;
+      else { SORT_KEY = k; SORT_DIR = -1; }
+      updateSortSelect();
+      applyFilters();
+    });
+  });
+
+  // Attach pagination
+  wrap.querySelectorAll('.page-btn[data-page]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      PAGE = +btn.dataset.page;
+      renderTable();
+      wrap.scrollTop = 0;
+    });
+  });
+}
+
+function thClass(k) {
+  if (SORT_KEY !== k) return '';
+  return SORT_DIR < 0 ? 'sort-desc' : 'sort-asc';
+}
+
+function buildPagination(total) {
+  if (total <= 1) return '';
+  let html = '';
+  const show = p => `<button class="page-btn${PAGE===p?' active':''}" data-page="${p}">${p}</button>`;
+  html += `<button class="page-btn" data-page="${PAGE-1}" ${PAGE===1?'disabled':''}>‹</button>`;
+  if (total <= 7) {
+    for (let i=1;i<=total;i++) html += show(i);
+  } else {
+    html += show(1);
+    if (PAGE > 3) html += `<span style="padding:4px 2px;color:var(--muted)">…</span>`;
+    for (let i=Math.max(2,PAGE-1); i<=Math.min(total-1,PAGE+1); i++) html += show(i);
+    if (PAGE < total-2) html += `<span style="padding:4px 2px;color:var(--muted)">…</span>`;
+    html += show(total);
+  }
+  html += `<button class="page-btn" data-page="${PAGE+1}" ${PAGE===total?'disabled':''}>›</button>`;
+  return html;
+}
+
+function scoreClass(s) {
+  if (s >= 70) return 'score-hi';
+  if (s >= 50) return 'score-med';
+  return 'score-lo';
+}
+
+function esc(s) {
+  if (!s && s !== 0) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Drawer ─────────────────────────────────────────────────────────────────
+function openDrawer(id) {
+  const r = ALL_RECORDS.find(x => x._id === id);
+  if (!r) return;
+
+  document.getElementById('drawerTitle').textContent = r.owner || r.doc_num || 'Record';
+
+  const cat = r.cat || 'other';
+  const clr = DOC_COLORS[cat] || 'type-other';
+  const sc = scoreClass(r.score);
+  const flags = (r.flags || []).map(f => `<span class="flag-pill" style="font-size:11px;padding:3px 8px">${f}</span>`).join('');
+  const amt = r.amount ? `$${Number(r.amount).toLocaleString()}` : '—';
+
+  // SVG ring for score
+  const pct = (r.score || 0) / 100;
+  const C = 2 * Math.PI * 20;
+  const dash = pct * C;
+  const ring = `<svg class="ring-svg" viewBox="0 0 50 50" width="56" height="56">
+    <circle cx="25" cy="25" r="20" fill="none" stroke="var(--border)" stroke-width="3"/>
+    <circle cx="25" cy="25" r="20" fill="none"
+      stroke="${r.score>=70?'var(--score-hi)':r.score>=50?'var(--score-med)':'var(--score-lo)'}"
+      stroke-width="3" stroke-linecap="round"
+      stroke-dasharray="${dash.toFixed(1)} ${(C-dash).toFixed(1)}"
+      transform="rotate(-90 25 25)"/>
+    <text x="25" y="29" text-anchor="middle"
+      font-family="Syne,sans-serif" font-weight="700" font-size="13"
+      fill="${r.score>=70?'var(--score-hi)':r.score>=50?'var(--score-med)':'var(--score-lo)'}">${r.score||0}</text>
+  </svg>`;
+
+  document.getElementById('drawerBody').innerHTML = `
+    <!-- Score -->
+    <div class="score-ring">
+      ${ring}
+      <div class="ring-text">
+        <strong>Seller Score: ${r.score || 0}/100</strong>
+        <span class="type-badge ${clr}" style="display:inline-block;margin:4px 0">${esc(r.cat_label || r.doc_type)}</span><br>
+        ${flags || '<span style="color:var(--muted);font-size:11px">No flags</span>'}
+      </div>
+    </div>
+
+    <!-- Document info -->
+    <div class="drawer-section">
+      <div class="drawer-section-title">Document</div>
+      <dl class="dl">
+        <dt>Doc #</dt><dd class="mono">${esc(r.doc_num)}</dd>
+        <dt>Type</dt><dd>${esc(r.cat_label || r.doc_type)}</dd>
+        <dt>Filed</dt><dd>${esc(r.filed)}</dd>
+        <dt>Amount</dt><dd class="amount">${amt}</dd>
+        <dt>Grantor / Owner</dt><dd>${esc(r.owner)}</dd>
+        <dt>Grantee</dt><dd>${esc(r.grantee) || '—'}</dd>
+        <dt>Legal Desc.</dt><dd style="font-size:10px">${esc(r.legal) || '—'}</dd>
+        <dt>Clerk URL</dt><dd>${r.clerk_url ? `<a class="ext-link" href="${esc(r.clerk_url)}" target="_blank" rel="noopener">↗ View on iCRIS</a>` : '—'}</dd>
+      </dl>
+    </div>
+
+    <!-- Property address -->
+    <div class="drawer-section">
+      <div class="drawer-section-title">Property Address</div>
+      <dl class="dl">
+        <dt>Street</dt><dd>${esc(r.prop_address) || '<span style="color:var(--muted)">Not matched</span>'}</dd>
+        <dt>City</dt><dd>${esc(r.prop_city) || '—'}</dd>
+        <dt>State</dt><dd>${esc(r.prop_state) || 'IL'}</dd>
+        <dt>ZIP</dt><dd>${esc(r.prop_zip) || '—'}</dd>
+      </dl>
+    </div>
+
+    <!-- Mailing address -->
+    <div class="drawer-section">
+      <div class="drawer-section-title">Mailing Address</div>
+      <dl class="dl">
+        <dt>Street</dt><dd>${esc(r.mail_address) || '<span style="color:var(--muted)">Not available</span>'}</dd>
+        <dt>City</dt><dd>${esc(r.mail_city) || '—'}</dd>
+        <dt>State</dt><dd>${esc(r.mail_state) || '—'}</dd>
+        <dt>ZIP</dt><dd>${esc(r.mail_zip) || '—'}</dd>
+      </dl>
+    </div>
+
+    <!-- Actions -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="copyRecord(${r._id})">⧉ Copy Record</button>
+      ${r.clerk_url ? `<a class="btn" href="${esc(r.clerk_url)}" target="_blank" rel="noopener" style="text-decoration:none">↗ Open Document</a>` : ''}
+    </div>`;
+
+  document.getElementById('drawerOverlay').classList.add('open');
+  document.getElementById('drawer').classList.add('open');
+}
+
+function closeDrawer() {
+  document.getElementById('drawerOverlay').classList.remove('open');
+  document.getElementById('drawer').classList.remove('open');
+}
+
+function copyRecord(id) {
+  const r = ALL_RECORDS.find(x => x._id === id);
+  if (!r) return;
+  const text = [
+    `Owner: ${r.owner}`,
+    `Doc Type: ${r.cat_label || r.doc_type}`,
+    `Doc #: ${r.doc_num}`,
+    `Filed: ${r.filed}`,
+    `Amount: ${r.amount ? '$'+Number(r.amount).toLocaleString() : '—'}`,
+    `Property: ${r.prop_address}, ${r.prop_city} IL ${r.prop_zip}`,
+    `Mailing: ${r.mail_address}, ${r.mail_city} ${r.mail_state} ${r.mail_zip}`,
+    `Score: ${r.score}/100`,
+    `Flags: ${(r.flags||[]).join(', ')}`,
+    `URL: ${r.clerk_url}`,
+  ].join('\n');
+  navigator.clipboard.writeText(text).then(() => showToast('Copied!'));
+}
+
+// ── Export ─────────────────────────────────────────────────────────────────
+function exportCSV() {
+  const cols = [
+    'First Name','Last Name','Mailing Address','Mailing City','Mailing State','Mailing Zip',
+    'Property Address','Property City','Property State','Property Zip',
+    'Lead Type','Document Type','Date Filed','Document Number',
+    'Amount / Debt Owed','Seller Score','Motivated Seller Flags','Source','Public Records URL'
+  ];
+
+  const rows = [cols.join(',')];
+  FILTERED.forEach(r => {
+    const owner = r.owner || '';
+    let first = '', last = '';
+    if (owner.includes(',')) {
+      const p = owner.split(',',2);
+      last = p[0].trim(); first = p[1].trim();
+    } else {
+      const p = owner.trim().rsplit ? owner.trim().split(' ') : owner.trim().split(' ');
+      first = p.slice(0,-1).join(' '); last = p[p.length-1] || '';
+    }
+    const q = v => `"${String(v||'').replace(/"/g,'""')}"`;
+    rows.push([
+      q(titleCase(first)), q(titleCase(last)),
+      q(r.mail_address), q(r.mail_city), q(r.mail_state), q(r.mail_zip),
+      q(r.prop_address), q(r.prop_city), q(r.prop_state||'IL'), q(r.prop_zip),
+      q(titleCase(r.cat||'')), q(r.cat_label||r.doc_type),
+      q(r.filed), q(r.doc_num),
+      q(r.amount||''), q(r.score||0),
+      q((r.flags||[]).join('; ')), q('Cook County Recorder of Deeds'), q(r.clerk_url)
+    ].join(','));
+  });
+
+  const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `cook-county-leads-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  showToast(`Exported ${FILTERED.length} records`);
+}
+
+function copyGHL() {
+  window.open('ghl_export.csv');
+}
+
+function titleCase(s) {
+  return s.replace(/\b\w/g, c => c.toUpperCase());
+}
+
+// ── Event wiring ───────────────────────────────────────────────────────────
+document.getElementById('searchInput').addEventListener('input', e => {
+  SEARCH = e.target.value; PAGE = 1; applyFilters();
+});
+
+document.getElementById('catFilter').addEventListener('change', e => {
+  CAT_FILTER = e.target.value; PAGE = 1; applyFilters();
+});
+
+document.getElementById('sortSelect').addEventListener('change', e => {
+  const [k, d] = e.target.value.split('-');
+  SORT_KEY = k; SORT_DIR = d === 'desc' ? -1 : 1;
+  applyFilters();
+});
+
+document.getElementById('chips').addEventListener('click', e => {
+  const chip = e.target.closest('.chip');
+  if (!chip) return;
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+  CHIP_FILTER = chip.dataset.filter;
+  PAGE = 1; applyFilters();
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeDrawer();
+});
+
+function updateSortSelect() {
+  const sel = document.getElementById('sortSelect');
+  const dir = SORT_DIR < 0 ? 'desc' : 'asc';
+  const val = `${SORT_KEY}-${dir}`;
+  for (const opt of sel.options) if (opt.value === val) { sel.value = val; break; }
+}
+
+// ── Toast ──────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+// ── Boot ───────────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
